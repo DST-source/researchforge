@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: researchforge_postgres
+    environment:
+      POSTGRES_DB: researchforge
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d researchforge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: researchforge_chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
+      - ALLOW_RESET=TRUE
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: researchforge_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  chroma_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: researchforge_network
